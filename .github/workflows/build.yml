@@ -3,7 +3,7 @@ name: Build Android Bus Widget APK
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:
+  workflow_dispatch: {}
 
 jobs:
   build:
@@ -19,12 +19,13 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
-      with:
-        gradle-version: '8.2'
+    - name: Setup Android SDK Components
+      run: |
+        export ANDROID_HOME=/usr/local/lib/android/sdk
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
-    - name: Create Android Project Files
+    - name: Create Android Project Structure
       run: |
         mkdir -p app/src/main/java/com/example/osethwidget
         mkdir -p app/src/main/res/layout
@@ -56,8 +57,8 @@ jobs:
                 mavenCentral()
             }
             dependencies {
-                classpath 'com.android.tools.build:gradle:8.1.1'
-                classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.20'
+                classpath 'com.android.tools.build:gradle:8.1.2'
+                classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0'
             }
         }
         allprojects {
@@ -284,8 +285,10 @@ jobs:
         }
         EOF
 
-    - name: Build Debug APK
-      run: gradle assembleDebug
+    - name: Setup Gradle Wrapper & Build APK
+      run: |
+        gradle wrapper --gradle-version 8.2
+        ./gradlew assembleDebug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
